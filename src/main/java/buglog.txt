@@ -1,0 +1,2 @@
+февр. 28, 2023 8:53:09 PM shop.ConfigLog log
+SEVERE: java src\main\java\warehouse.txt (Системе не удается найти указанный путь)

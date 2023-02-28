@@ -26,7 +26,7 @@ class Shop {
 
         try (BufferedReader loadIn = new BufferedReader(
                 new InputStreamReader(
-                        new FileInputStream(ConfigLog.SHOP_WAREHOUSE)))) {
+                        new FileInputStream(ConfigLog.SHOP_WAREHOUSE_IN)))) {
             String s;
             while ((s = loadIn.readLine()) != null) {
                 toys.add(
@@ -38,67 +38,77 @@ class Shop {
         } catch (Exception e) {
             System.out.println("Internal error. We`re fixing it");
             ConfigLog.log(e.getMessage(), this.getClass().getName());
+            System.exit(1);
         }
 
     }
 
     class Game {
         Queue<String> prizes;
+        int[][] chances;
 
         Game() {
             this.prizes = new LinkedList<>();
+            this.chances = new int[toys.size()][2];
         }
 
         void prepare() {
-            Random r = new Random();
-
-            for (Toy toy: toys) {
-                //Узнавать процент каждой игрушки в totalCount и назначать как вес каждому экземпляру
-                float chance = r.nextFloat(toy.getCount()*0.3f, toy.getCount()*0.75f);
-
-                if (chance > 0) toy.setChance(chance);
-                else toy.setChance((int)(toy.getCount()*0.5));
+            int sumChance = 0;
+            for (int i = 0; i < chances.length; i++) {
+                chances[i][0] = sumChance;
+                sumChance = sumChance + toys.get(i).chance;
+                chances[i][1] = sumChance;
             }
+            for (int[] chance: chances) {
+                System.out.printf("(%d, %d)\t", chance[0], chance[1]);
+            }
+        }
 
-            toys.forEach(System.out::println);
-
-//        return new LinkedList();
+        int findPrizeIndex(int rndInt) {
+            int i = toys.size() / 2;
+            while(i != 0 || i != toys.size()-1) {
+                if (chances[i][0] <= rndInt && rndInt < chances[i][0]) return i;
+                else if (rndInt < chances[i][0]) i--;
+                else if (rndInt >= chances[i][1]) i++;
+            }
+            return i;
         }
 
         void getPrize(int tryCount) {
 
             Random r = new Random();
             for (int i = 0; i < tryCount; i++) {
-                int index = r.nextInt(6);
+                int rndInt = r.nextInt(6);
+                int prizeInd = this.findPrizeIndex(rndInt);
 
-                System.out.println(index + "Выпало на рандоме");
-                System.out.println(toys.get(index).getName());
-                System.out.println(toys.get(index).getCount() + "кол-во было");
-
-                if (toys.get(index).getCount() > 0) {
-                    toys.get(index).takeAsPrize();
-                    prizes.add(toys.get(index).getName());
+                if (toys.get(prizeInd).takeAsPrize()) {
+                    prizes.add(toys.get(rndInt).getName());
                 }
                 else {
                     prizes.add("Неудача\n");
+                    toys.get(prizeInd).setChance(0);
+                    /**
+                     * !!! нужно продумать, как в распределении рандома убрать игрушку из игры
+                     */
+                    //this.prepare(prizeInd);
                 }
-
-                System.out.println(toys.get(index).getCount() + "кол-во стало");
             }
 
         }
 
         void printPrizes() {
-            try (FileWriter loadOut = new FileWriter(ConfigLog.GAME_PRIZES_OUT)) {
-                for (String s : prizes) {
-                    loadOut.append(
-                            String.format("%s\n", s)
-                    );
+            if (!prizes.isEmpty()) {
+                try (FileWriter loadOut = new FileWriter(ConfigLog.GAME_PRIZES_OUT)) {
+                    for (String s : prizes) {
+                        loadOut.append(
+                                String.format("%s\n", s)
+                        );
+                    }
+                } catch (IOException e) {
+                    System.out.println("Internal error. We`re fixing it");
+                    ConfigLog.log(e.getMessage(), this.getClass().getName());
+                    System.exit(2);
                 }
-            }
-            catch (IOException e) {
-                System.out.println("Internal error. We`re fixing it");
-                ConfigLog.log(e.getMessage(), this.getClass().getName());
             }
         }
 
@@ -110,13 +120,13 @@ class Shop {
         private int id;
         private String name;
         private int count;
-        private float chance;
+        private int chance;
 
         Toy(String[] args) {
             this.id = Integer.parseInt(args[0]);
             this.name = args[1];
             this.count = Integer.parseInt(args[2]);
-            this.chance = 0;
+            this.chance = Integer.parseInt(args[3]);
         }
 
         int getId() {
@@ -135,16 +145,17 @@ class Shop {
             this.count = count;
         }
 
-        public void takeAsPrize() {
-            this.count = count-1;
-            //Здесь потом могут быть проверки на изменение веса игрушки в игре
+        public boolean takeAsPrize() {
+            if (this.count == 0) return false;
+            else this.count = count-1;
+            return true;
         }
 
-        public float getChance() {
+        public int getChance() {
             return chance;
         }
 
-        public void setChance(float chance) {
+        public void setChance(int chance) {
             this.chance = chance;
         }
 

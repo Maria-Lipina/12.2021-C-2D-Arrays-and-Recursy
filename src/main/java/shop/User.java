@@ -13,7 +13,7 @@ public class User {
         System.out.println("Hello! How many times do you want to get a toy? Insert an integer");
         shop.game.getPrize(this.getInput());
         shop.game.printPrizes();
-        System.out.println("Done! Please get your prizes");
+        System.out.println("Done! Please get your prizes in the file");
 
     }
 

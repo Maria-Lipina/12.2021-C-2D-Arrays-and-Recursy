@@ -6,7 +6,7 @@ import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
 class ConfigLog {
-    static String SHOP_WAREHOUSE = "src/main/java/warehouse.txt";
+    static String SHOP_WAREHOUSE_IN = "src/main/java/warehouse.txt";
     static String GAME_PRIZES_OUT = "src/main/java/prizes.txt";
     static String LOG_FILE = "src/main/java/buglog.txt";
 
