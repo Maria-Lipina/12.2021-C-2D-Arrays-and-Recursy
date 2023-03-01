@@ -9,7 +9,6 @@ public class User {
         shop.init();
         shop.game.prepare();
 
-
         System.out.println("Hello! How many times do you want to get a toy? Insert an integer");
         shop.game.getPrize(this.getInput());
         shop.game.printPrizes();
@@ -28,5 +27,4 @@ public class User {
         }
         return tryCount;
     }
-
 }

@@ -14,7 +14,6 @@ import java.util.Random;
 class Shop {
 
     private ArrayList <Toy> toys;
-    int totalCount;
     Game game;
 
     Shop() {
@@ -32,8 +31,6 @@ class Shop {
                 toys.add(
                         new Toy(
                                 s.split("; ")));
-
-                totalCount = totalCount + toys.get(toys.size()-1).getCount();
             }
         } catch (Exception e) {
             System.out.println("Internal error. We`re fixing it");
@@ -46,28 +43,50 @@ class Shop {
     class Game {
         Queue<String> prizes;
         int[][] chances;
-
-        Game() {
-            this.prizes = new LinkedList<>();
-            this.chances = new int[toys.size()][2];
-        }
+        int sumChance;
 
         void prepare() {
-            int sumChance = 0;
+
+            this.chances = new int[toys.size()][2];
+            this.sumChance = 0;
+
             for (int i = 0; i < chances.length; i++) {
                 chances[i][0] = sumChance;
                 sumChance = sumChance + toys.get(i).chance;
                 chances[i][1] = sumChance;
             }
-            for (int[] chance: chances) {
-                System.out.printf("(%d, %d)\t", chance[0], chance[1]);
+        }
+
+        void prepare(int emptyToyInd) {
+
+            if (0 == emptyToyInd) {
+                toys.get(emptyToyInd+1).chance =
+                        toys.get(emptyToyInd+1).chance +
+                                toys.get(emptyToyInd).chance/2;
             }
+            if (0 < emptyToyInd && emptyToyInd < toys.size()-1) {
+                toys.get(emptyToyInd+1).chance = toys.get(emptyToyInd+1).chance +
+                        toys.get(emptyToyInd).chance/4;
+
+                toys.get(emptyToyInd-1).chance = toys.get(emptyToyInd-1).chance +
+                        toys.get(emptyToyInd).chance/4;
+            }
+            if (emptyToyInd == toys.size()-1) {
+                toys.get(emptyToyInd-1).chance = toys.get(emptyToyInd-1).chance +
+                        toys.get(emptyToyInd).chance/2;
+            }
+
+            toys.get(emptyToyInd).chance = toys.get(emptyToyInd).chance/2;
+            this.prepare();
         }
 
         int findPrizeIndex(int rndInt) {
-            int i = toys.size() / 2;
+
+            int i = toys.size() / 2 - 1;
             while(i != 0 || i != toys.size()-1) {
-                if (chances[i][0] <= rndInt && rndInt < chances[i][0]) return i;
+                if (chances[i][0] <= rndInt && rndInt < chances[i][1]) {
+                    return i;
+                }
                 else if (rndInt < chances[i][0]) i--;
                 else if (rndInt >= chances[i][1]) i++;
             }
@@ -75,25 +94,20 @@ class Shop {
         }
 
         void getPrize(int tryCount) {
-
+            this.prizes = new LinkedList<>();
             Random r = new Random();
-            for (int i = 0; i < tryCount; i++) {
-                int rndInt = r.nextInt(6);
-                int prizeInd = this.findPrizeIndex(rndInt);
 
+            for (int i = 0; i < tryCount; i++) {
+                int rndInt = r.nextInt(sumChance);
+                int prizeInd = this.findPrizeIndex(rndInt);
                 if (toys.get(prizeInd).takeAsPrize()) {
-                    prizes.add(toys.get(rndInt).getName());
+                    prizes.add(toys.get(prizeInd).name);
                 }
                 else {
-                    prizes.add("Неудача\n");
-                    toys.get(prizeInd).setChance(0);
-                    /**
-                     * !!! нужно продумать, как в распределении рандома убрать игрушку из игры
-                     */
-                    //this.prepare(prizeInd);
+                    prizes.add("Неудача");
+                    this.prepare(prizeInd);
                 }
             }
-
         }
 
         void printPrizes() {
@@ -116,9 +130,8 @@ class Shop {
 
 
     class Toy {
-
         private int id;
-        private String name;
+        private final String name;
         private int count;
         private int chance;
 
@@ -128,45 +141,10 @@ class Shop {
             this.count = Integer.parseInt(args[2]);
             this.chance = Integer.parseInt(args[3]);
         }
-
-        int getId() {
-            return id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public int getCount() {
-            return count;
-        }
-
-        public void setCount(int count) {
-            this.count = count;
-        }
-
         public boolean takeAsPrize() {
             if (this.count == 0) return false;
             else this.count = count-1;
             return true;
-        }
-
-        public int getChance() {
-            return chance;
-        }
-
-        public void setChance(int chance) {
-            this.chance = chance;
-        }
-
-        @Override
-        public String toString() {
-            return "Toy{" +
-                    "id=" + id +
-                    ", name='" + name + '\'' +
-                    ", count=" + count +
-                    ", chance=" + chance +
-                    '}';
         }
     }
 }
